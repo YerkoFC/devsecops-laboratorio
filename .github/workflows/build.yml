@@ -6,8 +6,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  sonarcloud:
-    name: SonarCloud
+  sast-sonarcloud:
+    name: SAST
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -76,3 +76,39 @@ jobs:
           fi
           
           exit $EXIT_CODE
+
+  sca-dependencycheck:
+    depends_on:
+      - sast-sonarcloud
+    name: SCA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Java (requerido para Dependency-Check)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        env:
+          JAVA_HOME: /opt/jdk
+        with:
+          project: '${{ github.repository }}'
+          path: '.'
+          format: 'JSON,HTML'
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+          out: 'reports'
+      
+      - name: Upload Dependency-Check Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report
+          path: reports/
+          retention-days: 30
