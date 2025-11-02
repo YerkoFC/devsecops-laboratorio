@@ -25,29 +25,52 @@ jobs:
           REPO="${{ github.event.repository.name }}"
           PROJECT_KEY="${ORG}_${REPO}"
           BASE_URL="https://sonarcloud.io/api/issues/search"
-          PARAMS="componentKeys=${PROJECT_KEY}&severities=MINOR,MAJOR,CRITICAL&resolved=false"
-          FULL_URL="${BASE_URL}?${PARAMS}"
 
           echo '::notice::Evaluando resultados del análisis de seguridad ...'
-          RESPONSE=$(curl -s -u $SONAR_TOKEN: "$FULL_URL"
+          RESPONSE=$(curl -s -u $SONAR_TOKEN: "$FULL_URL")
 
-          MINOR=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="MINOR") | .severity' | wc -l)
-          MAJOR=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="MAJOR") | .severity' | wc -l)
-          CRITICAL=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="CRITICAL") | .severity' | wc -l)
+          MAJOR=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
+            | jq '.total // 0')
+          
+          CRITICAL=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=CRITICAL&resolved=false" \
+            | jq '.total // 0')
+          
+          BLOCKER=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
+            | jq '.total // 0')
 
-          if [ $MINOR -gt 0 ]; then
-            echo '::error::Se encontraron $MINOR issues'
-            exit 1
+
+          echo "::group::📋 Resumen de Issues"
+          echo "🔴 BLOCKER:  $BLOCKER"
+          echo "🟠 CRITICAL: $CRITICAL"
+          echo "🟡 MAJOR:    $MAJOR"
+          echo "🔵 MINOR:    $MINOR"
+          echo "::endgroup::"
+
+          # Validaciones
+          EXIT_CODE=0
+          
+          if [ "$BLOCKER" -gt 0 ]; then
+            echo "::error::Se encontraron $BLOCKER issues BLOCKER"
+            EXIT_CODE=1
           fi
-
-          if [ $MAJOR -gt 0 ]; then
-            echo '::error::Se encontraron $MAJOR issues'
-            exit 1
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Se encontraron $CRITICAL issues CRITICAL"
+            EXIT_CODE=1
           fi
-
-          if [ $CRITICAL -gt 0 ]; then
-            echo '::error::Se encontraron $CRITICAL issues'
-            exit 1
+          
+          if [ "$MAJOR" -gt 0 ]; then
+            echo "::error::Se encontraron $MAJOR issues MAJOR"
+            EXIT_CODE=1
           fi
-
-          echo "::notice::Análisis de seguridad aprobado!"
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "::notice::Análisis de seguridad aprobado!"
+          else
+            echo "::error::Análisis de seguridad rechazado - Revisar issues encontrados"
+          fi
+          
+          exit $EXIT_CODE
