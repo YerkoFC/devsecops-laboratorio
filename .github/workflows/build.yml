@@ -6,198 +6,201 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  # sast-sonarcloud:
-  #   name: SAST
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 0  
-  #     - name: SonarCloud Scan
-  #       uses: SonarSource/sonarcloud-github-action@master
-  #       env: 
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #     - name: Check issues
-  #       env:
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}          
-  #       run: |
-  #         ORG="${{ github.repository_owner }}"
-  #         REPO="${{ github.event.repository.name }}"
-  #         PROJECT_KEY="${ORG}_${REPO}"
-  #         BASE_URL="https://sonarcloud.io/api/issues/search"
-
-  #         echo '::notice::Evaluando resultados del análisis de seguridad ...'
-
-  #         MINOR=$(curl -s -u $SONAR_TOKEN: \
-  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MINOR&resolved=false" \
-  #           | jq '.total // 0')
-
-  #         MAJOR=$(curl -s -u $SONAR_TOKEN: \
-  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
-  #           | jq '.total // 0')
-          
-  #         CRITICAL=$(curl -s -u $SONAR_TOKEN: \
-  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=CRITICAL&resolved=false" \
-  #           | jq '.total // 0')
-          
-  #         BLOCKER=$(curl -s -u $SONAR_TOKEN: \
-  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
-  #           | jq '.total // 0')\
-
-  #         echo "::group::📋 Resumen de Issues"
-  #         echo "🔴 BLOCKER:  $BLOCKER"
-  #         echo "🟠 CRITICAL: $CRITICAL"
-  #         echo "🟡 MAJOR:    $MAJOR"
-  #         echo "🔵 MINOR:    $MINOR"
-  #         echo "::endgroup::"
-
-  #         # Validaciones
-  #         EXIT_CODE=0
-          
-  #         if [ "$BLOCKER" -gt 0 ]; then
-  #           echo "::error::Se encontraron $BLOCKER issues BLOCKER"
-  #           EXIT_CODE=1
-  #         fi
-          
-  #         if [ "$CRITICAL" -gt 0 ]; then
-  #           echo "::error::Se encontraron $CRITICAL issues CRITICAL"
-  #           EXIT_CODE=1
-  #         fi
-          
-  #         if [ "$MAJOR" -gt 0 ]; then
-  #           echo "::error::Se encontraron $MAJOR issues MAJOR"
-  #           EXIT_CODE=1
-  #         fi
-          
-  #         if [ $EXIT_CODE -eq 0 ]; then
-  #           echo "::notice::Análisis de seguridad aprobado!"
-  #         else
-  #           echo "::error::Análisis de seguridad rechazado - Revisar issues encontrados"
-  #         fi
-          
-  #         exit $EXIT_CODE
-
-  # sca-dependencycheck:
-  #   # needs: sast-sonarcloud
-  #   name: SCA
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Setup Java (requerido para Dependency-Check)
-  #       uses: actions/setup-java@v3
-  #       with:
-  #         distribution: 'temurin'
-  #         java-version: '17'
+  sast-sonarcloud:
+    name: SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  
       
-  #     - name: Analisis OWASP Dependency-Check
-  #       uses: dependency-check/Dependency-Check_Action@main
-  #       env:
-  #         JAVA_HOME: /opt/jdk
-  #       with:
-  #         project: '${{ github.repository }}'
-  #         path: '.'
-  #         format: 'ALL'
-  #         args: >
-  #           --enableRetired
-  #         out: 'reports'
-      
-  #     - name: Carga de reportes de Dependency-Check
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: dependency-check-report
-  #         path: reports/
-  #         retention-days: 30
+      - name: Escaneo de código con SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env: 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    
+      - name: Análisis de reporte de SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}          
+        run: |
+          ORG="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          PROJECT_KEY="${ORG}_${REPO}"
+          BASE_URL="https://sonarcloud.io/api/issues/search"
 
-  #     - name: Analyze Dependency-Check Results
-  #       run: |
-  #         echo "::group::Análisis de Vulnerabilidades en Dependencias (SCA)"
+          echo '::notice::Evaluando resultados del análisis de seguridad ...'
+
+          MINOR=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MINOR&resolved=false" \
+            | jq '.total // 0')
+
+          MAJOR=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
+            | jq '.total // 0')
           
-  #         REPORT_JSON="reports/dependency-check-report.json"
+          CRITICAL=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=CRITICAL&resolved=false" \
+            | jq '.total // 0')
           
-  #         if [ ! -f "$REPORT_JSON" ]; then
-  #           echo "::error::No se generó el reporte de Dependency-Check"
-  #           exit 1
-  #         fi
+          BLOCKER=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
+            | jq '.total // 0')\
+
+          echo "::group::📋 Resumen de Issues"
+          echo "🔴 BLOCKER:  $BLOCKER"
+          echo "🟠 CRITICAL: $CRITICAL"
+          echo "🟡 MAJOR:    $MAJOR"
+          echo "🔵 MINOR:    $MINOR"
+          echo "::endgroup::"
+
+          # Validar umbrales
+          EXIT_CODE=0
           
-  #         # Contar vulnerabilidades por severidad
-  #         CRITICAL=$(jq -r '
-  #           [.dependencies[]?.vulnerabilities[]? | 
-  #           select(.severity == "critical")] | length
-  #         ' "$REPORT_JSON")
+          if [ "$BLOCKER" -gt 0 ]; then
+            echo "::error::Se encontraron $BLOCKER issues BLOCKER"
+            EXIT_CODE=1
+          fi
           
-  #         HIGH=$(jq -r '
-  #           [.dependencies[]?.vulnerabilities[]? | 
-  #           select(.severity == "high")] | length
-  #         ' "$REPORT_JSON")
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Se encontraron $CRITICAL issues CRITICAL"
+            EXIT_CODE=1
+          fi
           
-  #         MODERATE=$(jq -r '
-  #           [.dependencies[]?.vulnerabilities[]? | 
-  #           select(.severity == "moderate")] | length
-  #         ' "$REPORT_JSON")
+          if [ "$MAJOR" -gt 0 ]; then
+            echo "::error::Se encontraron $MAJOR issues MAJOR"
+            EXIT_CODE=1
+          fi
           
-  #         LOW=$(jq -r '
-  #           [.dependencies[]?.vulnerabilities[]? | 
-  #           select(.severity == "low")] | length
-  #         ' "$REPORT_JSON")
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "::notice::Análisis de seguridad aprobado!"
+          else
+            echo "::error::Análisis de seguridad rechazado - Revisar issues encontrados"
+          fi
           
-  #         # Contar dependencias vulnerables
-  #         VULNERABLE_DEPS=$(jq -r '
-  #           [.dependencies[]? | 
-  #           select(.vulnerabilities != null and (.vulnerabilities | length) > 0)] | length
-  #         ' "$REPORT_JSON")
+          exit $EXIT_CODE
+
+  sca-dependencycheck:
+    needs: sast-sonarcloud
+    name: SCA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java (requerido para Dependency-Check)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Análisis OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        env:
+          JAVA_HOME: /opt/jdk
+        with:
+          project: '${{ github.repository }}'
+          path: '.'
+          format: 'ALL'
+          args: >
+            --enableRetired
+          out: 'reports'
+      
+      - name: Carga de reportes de Dependency-Check
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/
+          retention-days: 30
+
+      - name: Análisis de reporte de Dependency-Check
+        run: |
+          echo "::group::Análisis de Vulnerabilidades en Dependencias (SCA)"
           
-  #         TOTAL_DEPS=$(jq -r '.dependencies | length' "$REPORT_JSON")
+          REPORT_JSON="reports/dependency-check-report.json"
           
-  #         echo "Dependencias analizadas: $TOTAL_DEPS"
-  #         echo "Dependencias vulnerables: $VULNERABLE_DEPS"
-  #         echo ""
-  #         echo "🔴 CRITICAL: $CRITICAL"
-  #         echo "🟠 HIGH:     $HIGH"
-  #         echo "🟡 MODERATE:   $MODERATE"
-  #         echo "🔵 LOW:      $LOW"
-  #         echo "::endgroup::"
+          if [ ! -f "$REPORT_JSON" ]; then
+            echo "::error::No se generó el reporte de Dependency-Check"
+            exit 1
+          fi
           
-  #         # Validar umbrales
-  #         EXIT_CODE=0
+          # Contar vulnerabilidades por severidad
+          CRITICAL=$(jq -r '
+            [.dependencies[]?.vulnerabilities[]? | 
+            select(.severity == "critical")] | length
+          ' "$REPORT_JSON")
           
-  #         if [ "$CRITICAL" -gt 0 ]; then
-  #           echo "::error::Se encontraron $CRITICAL vulnerabilidades CRITICAL"
-  #           EXIT_CODE=1
-  #         fi
+          HIGH=$(jq -r '
+            [.dependencies[]?.vulnerabilities[]? | 
+            select(.severity == "high")] | length
+          ' "$REPORT_JSON")
           
-  #         if [ "$HIGH" -gt 0 ]; then
-  #           echo "::error::Se encontraron $HIGH vulnerabilidades HIGH"
-  #           EXIT_CODE=1
-  #         fi
+          MODERATE=$(jq -r '
+            [.dependencies[]?.vulnerabilities[]? | 
+            select(.severity == "moderate")] | length
+          ' "$REPORT_JSON")
           
-  #         if [ "$MODERATE" -gt 0 ]; then
-  #           echo "::error::Se encontraron $MODERATE vulnerabilidades MODERATE"
-  #           EXIT_CODE=1
-  #         fi
+          LOW=$(jq -r '
+            [.dependencies[]?.vulnerabilities[]? | 
+            select(.severity == "low")] | length
+          ' "$REPORT_JSON")
           
-  #         if [ $EXIT_CODE -eq 0 ]; then
-  #           echo "::notice::Análisis SCA aprobado - Sin vulnerabilidades críticas"
-  #         else
-  #           echo "::error::Análisis SCA rechazado - Revisar dependencias vulnerables"
-  #           echo "::notice::Descarga el reporte completo desde los artifacts"
-  #         fi
+          # Contar dependencias vulnerables
+          VULNERABLE_DEPS=$(jq -r '
+            [.dependencies[]? | 
+            select(.vulnerabilities != null and (.vulnerabilities | length) > 0)] | length
+          ' "$REPORT_JSON")
           
-  #         exit $EXIT_CODE
+          TOTAL_DEPS=$(jq -r '.dependencies | length' "$REPORT_JSON")
+          
+          echo "Dependencias analizadas: $TOTAL_DEPS"
+          echo "Dependencias vulnerables: $VULNERABLE_DEPS"
+          echo ""
+          echo "🔴 CRITICAL: $CRITICAL"
+          echo "🟠 HIGH:     $HIGH"
+          echo "🟡 MODERATE: $MODERATE"
+          echo "🔵 LOW:      $LOW"
+          echo "::endgroup::"
+          
+          # Validar umbrales
+          EXIT_CODE=0
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Se encontraron $CRITICAL vulnerabilidades CRITICAL"
+            EXIT_CODE=1
+          fi
+          
+          if [ "$HIGH" -gt 0 ]; then
+            echo "::error::Se encontraron $HIGH vulnerabilidades HIGH"
+            EXIT_CODE=1
+          fi
+          
+          if [ "$MODERATE" -gt 0 ]; then
+            echo "::error::Se encontraron $MODERATE vulnerabilidades MODERATE"
+            EXIT_CODE=1
+          fi
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "::notice::Análisis SCA aprobado - Sin vulnerabilidades críticas"
+          else
+            echo "::error::Análisis SCA rechazado - Revisar dependencias vulnerables"
+            echo "::notice::Descarga el reporte completo desde los artifacts"
+          fi
+          
+          exit $EXIT_CODE
 
   trivy-scan:
+    needs: sca-dependencycheck
     name: Escaner de imagen con trivy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       
-      - name: Build docker image
+      - name: Build de imagen docker
         run: |
           docker build --tag ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest .
       
-      - name: Escaner
+      - name: Escaneo de imagen con trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest
@@ -212,7 +215,7 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
-      - name: Analisis de resultado de trivy
+      - name: Analisis de reporte de Trivy
         run: |
           echo "::group::Análisis de Vulnerabilidades de la imagen con Trivy"
           REPORT_JSON="trivy-report.json"
