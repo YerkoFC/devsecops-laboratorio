@@ -125,22 +125,22 @@ jobs:
           # Contar vulnerabilidades por severidad
           CRITICAL=$(jq -r '
             [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "CRITICAL")] | length
+            select(.severity == "critical")] | length
           ' "$REPORT_JSON")
           
           HIGH=$(jq -r '
             [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "HIGH")] | length
+            select(.severity == "high")] | length
           ' "$REPORT_JSON")
           
-          MEDIUM=$(jq -r '
+          MODERATE=$(jq -r '
             [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "MEDIUM")] | length
+            select(.severity == "moderate")] | length
           ' "$REPORT_JSON")
           
           LOW=$(jq -r '
             [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "LOW")] | length
+            select(.severity == "low")] | length
           ' "$REPORT_JSON")
           
           # Contar dependencias vulnerables
@@ -156,7 +156,7 @@ jobs:
           echo ""
           echo "🔴 CRITICAL: $CRITICAL"
           echo "🟠 HIGH:     $HIGH"
-          echo "🟡 MEDIUM:   $MEDIUM"
+          echo "🟡 MODERATE:   $MODERATE"
           echo "🔵 LOW:      $LOW"
           echo "::endgroup::"
           
@@ -173,8 +173,8 @@ jobs:
             EXIT_CODE=1
           fi
           
-          if [ "$MEDIUM" -gt 0 ]; then
-            echo "::error::Se encontraron $MEDIUM vulnerabilidades MEDIUM"
+          if [ "$MODERATE" -gt 0 ]; then
+            echo "::error::Se encontraron $MODERATE vulnerabilidades MODERATE"
             EXIT_CODE=1
           fi
           
