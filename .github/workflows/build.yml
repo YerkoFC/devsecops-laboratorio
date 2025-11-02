@@ -28,6 +28,10 @@ jobs:
 
           echo '::notice::Evaluando resultados del análisis de seguridad ...'
 
+          MINOR=$(curl -s -u $SONAR_TOKEN: \
+            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MINOR&resolved=false" \
+            | jq '.total // 0')
+
           MAJOR=$(curl -s -u $SONAR_TOKEN: \
             "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
             | jq '.total // 0')
