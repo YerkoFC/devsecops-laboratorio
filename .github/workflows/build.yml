@@ -78,7 +78,7 @@ jobs:
   #         exit $EXIT_CODE
 
   sca-dependencycheck:
-    needs: sast-sonarcloud
+    # needs: sast-sonarcloud
     name: SCA
     runs-on: ubuntu-latest
     steps:
