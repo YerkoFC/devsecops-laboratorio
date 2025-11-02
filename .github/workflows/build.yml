@@ -27,7 +27,6 @@ jobs:
           BASE_URL="https://sonarcloud.io/api/issues/search"
 
           echo '::notice::Evaluando resultados del análisis de seguridad ...'
-          RESPONSE=$(curl -s -u $SONAR_TOKEN: "$FULL_URL")
 
           MAJOR=$(curl -s -u $SONAR_TOKEN: \
             "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
@@ -39,8 +38,7 @@ jobs:
           
           BLOCKER=$(curl -s -u $SONAR_TOKEN: \
             "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
-            | jq '.total // 0')
-
+            | jq '.total // 0')\
 
           echo "::group::📋 Resumen de Issues"
           echo "🔴 BLOCKER:  $BLOCKER"
