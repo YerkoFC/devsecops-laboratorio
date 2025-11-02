@@ -17,3 +17,37 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env: 
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Check issues
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}          
+        run: |
+          ORG="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          PROJECT_KEY="${ORG}_${REPO}"
+          BASE_URL="https://sonarcloud.io/api/issues/search"
+          PARAMS="componentKeys=${PROJECT_KEY}&severities=MINOR,MAJOR,CRITICAL&resolved=false"
+          FULL_URL="${BASE_URL}?${PARAMS}"
+
+          echo '::notice::Evaluando resultados del análisis de seguridad ...'
+          RESPONSE=$(curl -s -u $SONAR_TOKEN: "$FULL_URL"
+
+          MINOR=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="MINOR") | .severity' | wc -l)
+          MAJOR=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="MAJOR") | .severity' | wc -l)
+          CRITICAL=$(echo "$RESPONSE" | jq '.issues[] | select(.severity=="CRITICAL") | .severity' | wc -l)
+
+          if [ $MINOR -gt 0 ]; then
+            echo '::error::Se encontraron $MINOR issues'
+            exit 1
+          fi
+
+          if [ $MAJOR -gt 0 ]; then
+            echo '::error::Se encontraron $MAJOR issues'
+            exit 1
+          fi
+
+          if [ $CRITICAL -gt 0 ]; then
+            echo '::error::Se encontraron $CRITICAL issues'
+            exit 1
+          fi
+
+          echo "::notice::Análisis de seguridad aprobado!"
