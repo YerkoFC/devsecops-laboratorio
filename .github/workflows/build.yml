@@ -98,7 +98,7 @@ jobs:
         with:
           project: '${{ github.repository }}'
           path: '.'
-          format: 'JSON,HTML'
+          format: 'ALL'
           args: >
             --failOnCVSS 7
             --enableRetired
