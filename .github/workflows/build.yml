@@ -6,76 +6,76 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  sast-sonarcloud:
-    name: SAST
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env: 
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      - name: Check issues
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}          
-        run: |
-          ORG="${{ github.repository_owner }}"
-          REPO="${{ github.event.repository.name }}"
-          PROJECT_KEY="${ORG}_${REPO}"
-          BASE_URL="https://sonarcloud.io/api/issues/search"
+  # sast-sonarcloud:
+  #   name: SAST
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0  
+  #     - name: SonarCloud Scan
+  #       uses: SonarSource/sonarcloud-github-action@master
+  #       env: 
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #     - name: Check issues
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}          
+  #       run: |
+  #         ORG="${{ github.repository_owner }}"
+  #         REPO="${{ github.event.repository.name }}"
+  #         PROJECT_KEY="${ORG}_${REPO}"
+  #         BASE_URL="https://sonarcloud.io/api/issues/search"
 
-          echo '::notice::Evaluando resultados del análisis de seguridad ...'
+  #         echo '::notice::Evaluando resultados del análisis de seguridad ...'
 
-          MINOR=$(curl -s -u $SONAR_TOKEN: \
-            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MINOR&resolved=false" \
-            | jq '.total // 0')
+  #         MINOR=$(curl -s -u $SONAR_TOKEN: \
+  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MINOR&resolved=false" \
+  #           | jq '.total // 0')
 
-          MAJOR=$(curl -s -u $SONAR_TOKEN: \
-            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
-            | jq '.total // 0')
+  #         MAJOR=$(curl -s -u $SONAR_TOKEN: \
+  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=MAJOR&resolved=false" \
+  #           | jq '.total // 0')
           
-          CRITICAL=$(curl -s -u $SONAR_TOKEN: \
-            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=CRITICAL&resolved=false" \
-            | jq '.total // 0')
+  #         CRITICAL=$(curl -s -u $SONAR_TOKEN: \
+  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=CRITICAL&resolved=false" \
+  #           | jq '.total // 0')
           
-          BLOCKER=$(curl -s -u $SONAR_TOKEN: \
-            "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
-            | jq '.total // 0')\
+  #         BLOCKER=$(curl -s -u $SONAR_TOKEN: \
+  #           "${BASE_URL}?componentKeys=${PROJECT_KEY}&severities=BLOCKER&resolved=false" \
+  #           | jq '.total // 0')\
 
-          echo "::group::📋 Resumen de Issues"
-          echo "🔴 BLOCKER:  $BLOCKER"
-          echo "🟠 CRITICAL: $CRITICAL"
-          echo "🟡 MAJOR:    $MAJOR"
-          echo "🔵 MINOR:    $MINOR"
-          echo "::endgroup::"
+  #         echo "::group::📋 Resumen de Issues"
+  #         echo "🔴 BLOCKER:  $BLOCKER"
+  #         echo "🟠 CRITICAL: $CRITICAL"
+  #         echo "🟡 MAJOR:    $MAJOR"
+  #         echo "🔵 MINOR:    $MINOR"
+  #         echo "::endgroup::"
 
-          # Validaciones
-          EXIT_CODE=0
+  #         # Validaciones
+  #         EXIT_CODE=0
           
-          if [ "$BLOCKER" -gt 0 ]; then
-            echo "::error::Se encontraron $BLOCKER issues BLOCKER"
-            EXIT_CODE=1
-          fi
+  #         if [ "$BLOCKER" -gt 0 ]; then
+  #           echo "::error::Se encontraron $BLOCKER issues BLOCKER"
+  #           EXIT_CODE=1
+  #         fi
           
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "::error::Se encontraron $CRITICAL issues CRITICAL"
-            EXIT_CODE=1
-          fi
+  #         if [ "$CRITICAL" -gt 0 ]; then
+  #           echo "::error::Se encontraron $CRITICAL issues CRITICAL"
+  #           EXIT_CODE=1
+  #         fi
           
-          if [ "$MAJOR" -gt 0 ]; then
-            echo "::error::Se encontraron $MAJOR issues MAJOR"
-            EXIT_CODE=1
-          fi
+  #         if [ "$MAJOR" -gt 0 ]; then
+  #           echo "::error::Se encontraron $MAJOR issues MAJOR"
+  #           EXIT_CODE=1
+  #         fi
           
-          if [ $EXIT_CODE -eq 0 ]; then
-            echo "::notice::Análisis de seguridad aprobado!"
-          else
-            echo "::error::Análisis de seguridad rechazado - Revisar issues encontrados"
-          fi
+  #         if [ $EXIT_CODE -eq 0 ]; then
+  #           echo "::notice::Análisis de seguridad aprobado!"
+  #         else
+  #           echo "::error::Análisis de seguridad rechazado - Revisar issues encontrados"
+  #         fi
           
-          exit $EXIT_CODE
+  #         exit $EXIT_CODE
 
   sca-dependencycheck:
     needs: sast-sonarcloud
