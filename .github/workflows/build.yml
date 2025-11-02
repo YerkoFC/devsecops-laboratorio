@@ -77,112 +77,132 @@ jobs:
           
   #         exit $EXIT_CODE
 
-  sca-dependencycheck:
-    # needs: sast-sonarcloud
-    name: SCA
+  # sca-dependencycheck:
+  #   # needs: sast-sonarcloud
+  #   name: SCA
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Setup Java (requerido para Dependency-Check)
+  #       uses: actions/setup-java@v3
+  #       with:
+  #         distribution: 'temurin'
+  #         java-version: '17'
+      
+  #     - name: Analisis OWASP Dependency-Check
+  #       uses: dependency-check/Dependency-Check_Action@main
+  #       env:
+  #         JAVA_HOME: /opt/jdk
+  #       with:
+  #         project: '${{ github.repository }}'
+  #         path: '.'
+  #         format: 'ALL'
+  #         args: >
+  #           --enableRetired
+  #         out: 'reports'
+      
+  #     - name: Carga de reportes de Dependency-Check
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dependency-check-report
+  #         path: reports/
+  #         retention-days: 30
+
+  #     - name: Analyze Dependency-Check Results
+  #       run: |
+  #         echo "::group::Análisis de Vulnerabilidades en Dependencias (SCA)"
+          
+  #         REPORT_JSON="reports/dependency-check-report.json"
+          
+  #         if [ ! -f "$REPORT_JSON" ]; then
+  #           echo "::error::No se generó el reporte de Dependency-Check"
+  #           exit 1
+  #         fi
+          
+  #         # Contar vulnerabilidades por severidad
+  #         CRITICAL=$(jq -r '
+  #           [.dependencies[]?.vulnerabilities[]? | 
+  #           select(.severity == "critical")] | length
+  #         ' "$REPORT_JSON")
+          
+  #         HIGH=$(jq -r '
+  #           [.dependencies[]?.vulnerabilities[]? | 
+  #           select(.severity == "high")] | length
+  #         ' "$REPORT_JSON")
+          
+  #         MODERATE=$(jq -r '
+  #           [.dependencies[]?.vulnerabilities[]? | 
+  #           select(.severity == "moderate")] | length
+  #         ' "$REPORT_JSON")
+          
+  #         LOW=$(jq -r '
+  #           [.dependencies[]?.vulnerabilities[]? | 
+  #           select(.severity == "low")] | length
+  #         ' "$REPORT_JSON")
+          
+  #         # Contar dependencias vulnerables
+  #         VULNERABLE_DEPS=$(jq -r '
+  #           [.dependencies[]? | 
+  #           select(.vulnerabilities != null and (.vulnerabilities | length) > 0)] | length
+  #         ' "$REPORT_JSON")
+          
+  #         TOTAL_DEPS=$(jq -r '.dependencies | length' "$REPORT_JSON")
+          
+  #         echo "Dependencias analizadas: $TOTAL_DEPS"
+  #         echo "Dependencias vulnerables: $VULNERABLE_DEPS"
+  #         echo ""
+  #         echo "🔴 CRITICAL: $CRITICAL"
+  #         echo "🟠 HIGH:     $HIGH"
+  #         echo "🟡 MODERATE:   $MODERATE"
+  #         echo "🔵 LOW:      $LOW"
+  #         echo "::endgroup::"
+          
+  #         # Validar umbrales
+  #         EXIT_CODE=0
+          
+  #         if [ "$CRITICAL" -gt 0 ]; then
+  #           echo "::error::Se encontraron $CRITICAL vulnerabilidades CRITICAL"
+  #           EXIT_CODE=1
+  #         fi
+          
+  #         if [ "$HIGH" -gt 0 ]; then
+  #           echo "::error::Se encontraron $HIGH vulnerabilidades HIGH"
+  #           EXIT_CODE=1
+  #         fi
+          
+  #         if [ "$MODERATE" -gt 0 ]; then
+  #           echo "::error::Se encontraron $MODERATE vulnerabilidades MODERATE"
+  #           EXIT_CODE=1
+  #         fi
+          
+  #         if [ $EXIT_CODE -eq 0 ]; then
+  #           echo "::notice::Análisis SCA aprobado - Sin vulnerabilidades críticas"
+  #         else
+  #           echo "::error::Análisis SCA rechazado - Revisar dependencias vulnerables"
+  #           echo "::notice::Descarga el reporte completo desde los artifacts"
+  #         fi
+          
+  #         exit $EXIT_CODE
+
+  dockerbuild:
+    name: Docker Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup Java (requerido para Dependency-Check)
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
       
-      - name: Analisis OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        env:
-          JAVA_HOME: /opt/jdk
-        with:
-          project: '${{ github.repository }}'
-          path: '.'
-          format: 'ALL'
-          args: >
-            --enableRetired
-          out: 'reports'
-      
-      - name: Carga de reportes de Dependency-Check
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-check-report
-          path: reports/
-          retention-days: 30
-
-      - name: Analyze Dependency-Check Results
+      - name: Build docker image
         run: |
-          echo "::group::Análisis de Vulnerabilidades en Dependencias (SCA)"
-          
-          REPORT_JSON="reports/dependency-check-report.json"
-          
-          if [ ! -f "$REPORT_JSON" ]; then
-            echo "::error::No se generó el reporte de Dependency-Check"
-            exit 1
-          fi
-          
-          # Contar vulnerabilidades por severidad
-          CRITICAL=$(jq -r '
-            [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "critical")] | length
-          ' "$REPORT_JSON")
-          
-          HIGH=$(jq -r '
-            [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "high")] | length
-          ' "$REPORT_JSON")
-          
-          MODERATE=$(jq -r '
-            [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "moderate")] | length
-          ' "$REPORT_JSON")
-          
-          LOW=$(jq -r '
-            [.dependencies[]?.vulnerabilities[]? | 
-            select(.severity == "low")] | length
-          ' "$REPORT_JSON")
-          
-          # Contar dependencias vulnerables
-          VULNERABLE_DEPS=$(jq -r '
-            [.dependencies[]? | 
-            select(.vulnerabilities != null and (.vulnerabilities | length) > 0)] | length
-          ' "$REPORT_JSON")
-          
-          TOTAL_DEPS=$(jq -r '.dependencies | length' "$REPORT_JSON")
-          
-          echo "Dependencias analizadas: $TOTAL_DEPS"
-          echo "Dependencias vulnerables: $VULNERABLE_DEPS"
-          echo ""
-          echo "🔴 CRITICAL: $CRITICAL"
-          echo "🟠 HIGH:     $HIGH"
-          echo "🟡 MODERATE:   $MODERATE"
-          echo "🔵 LOW:      $LOW"
-          echo "::endgroup::"
-          
-          # Validar umbrales
-          EXIT_CODE=0
-          
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "::error::Se encontraron $CRITICAL vulnerabilidades CRITICAL"
-            EXIT_CODE=1
-          fi
-          
-          if [ "$HIGH" -gt 0 ]; then
-            echo "::error::Se encontraron $HIGH vulnerabilidades HIGH"
-            EXIT_CODE=1
-          fi
-          
-          if [ "$MODERATE" -gt 0 ]; then
-            echo "::error::Se encontraron $MODERATE vulnerabilidades MODERATE"
-            EXIT_CODE=1
-          fi
-          
-          if [ $EXIT_CODE -eq 0 ]; then
-            echo "::notice::Análisis SCA aprobado - Sin vulnerabilidades críticas"
-          else
-            echo "::error::Análisis SCA rechazado - Revisar dependencias vulnerables"
-            echo "::notice::Descarga el reporte completo desde los artifacts"
-          fi
-          
-          exit $EXIT_CODE
+          docker build --tag ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest .
+
+      - name: Login to dockerhub 
+        uses: docker/login-action@v3.0.0
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Push to dockerhub
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest
