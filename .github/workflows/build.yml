@@ -212,6 +212,52 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
+      - name: Analisis de resultado de trivy
+        run: |
+          echo "::group::Análisis de Vulnerabilidades de la imagen con Trivy"
+          REPORT_JSON="trivy-report.json"
+          
+          if [ ! -f "$REPORT_JSON" ]; then
+            echo "::error::No se generó el reporte de Trivy"
+            exit 1
+          fi
+          
+          MEDIUM=$(jq -r '[.Results[].Vulnerabilities[] | select(.Severity == "MEDIUM") ] | length' "$REPORT_JSON")
+          HIGH=$(jq -r '[.Results[].Vulnerabilities[] | select(.Severity == "HIGH") ] | length' "$REPORT_JSON")
+          CRITICAL=$(jq -r '[.Results[].Vulnerabilities[] | select(.Severity == "CRITICAL") ] | length' "$REPORT_JSON")
+
+          echo "Vulnerabilidades"
+          echo "🔴 CRITICAL: $CRITICAL"
+          echo "🟠 HIGH:     $HIGH"
+          echo "🟡 MODERATE: $MODERATE"
+
+          echo "::endgroup::"
+
+          # Validar umbrales
+          EXIT_CODE=0
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Se encontraron $CRITICAL vulnerabilidades CRITICAL"
+            EXIT_CODE=1
+          fi
+          
+          if [ "$HIGH" -gt 0 ]; then
+            echo "::error::Se encontraron $HIGH vulnerabilidades HIGH"
+            EXIT_CODE=1
+          fi
+          
+          if [ "$MEDIUM" -gt 0 ]; then
+            echo "::error::Se encontraron $MEDIUM vulnerabilidades MEDIUM"
+            EXIT_CODE=1
+          fi
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "::notice::Análisis de imagen aprobado - Sin vulnerabilidades críticas"
+          else
+            echo "::error::Análisis de imagen rechazado"
+            echo "::notice::Descarga el reporte completo desde los artifacts"
+          fi
+
       - name: Login en dockerhub 
         uses: docker/login-action@v3.0.0
         with:
