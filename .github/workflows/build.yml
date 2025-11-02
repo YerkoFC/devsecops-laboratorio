@@ -187,8 +187,8 @@ jobs:
           
   #         exit $EXIT_CODE
 
-  dockerbuild:
-    name: Docker Build
+  trivy-scan:
+    name: Escaner de imagen con trivy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -196,13 +196,28 @@ jobs:
       - name: Build docker image
         run: |
           docker build --tag ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest .
+      
+      - name: Escaner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest
+          format: 'json'
+          output: 'trivy-report.json'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+      
+      - name: Carga de reporte trivy
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-report
+          path: trivy-report.json
 
-      - name: Login to dockerhub 
+      - name: Login en dockerhub 
         uses: docker/login-action@v3.0.0
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Push to dockerhub
+      - name: Subir imagen a dockerhub
         run: |
           docker push ${{ secrets.DOCKER_USER }}/${{ github.event.repository.name }}:latest
